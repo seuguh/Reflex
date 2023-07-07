@@ -1,4 +1,5 @@
 """
+----- WORK IN PROGRESS ----  ça marche mais y'a encore des trucs à faire.
 # éteindre tout
 import time
 import random

@@ -17,7 +17,8 @@ import board
 import digitalio
 import neopixel
 
-# Set up the button inputs
+print("start...")
+# description des boutons
 button1 = digitalio.DigitalInOut(board.GP14)
 button1.direction = digitalio.Direction.INPUT
 button1.pull = digitalio.Pull.UP
@@ -26,25 +27,26 @@ button2 = digitalio.DigitalInOut(board.GP15)
 button2.direction = digitalio.Direction.INPUT
 button2.pull = digitalio.Pull.UP
 
-# Set up the neopixel strip
+# description du bandeau de leds
 strip = neopixel.NeoPixel(board.GP16, 9)
+luminosite = 0.2
+rouge=(255*0.2, 0, 0)
+vert=(0, 255*0.2, 0)
+bleu=(0, 0, 255*0.2)
+jaune=(255*0.2,255*0.2,0)
+eteint=(0, 0, 0)
 
-# Initialize scores and game state
+# Initialisation scores et game state
 score1 = 0
 score2 = 0
 game_state = "start"
 wait_time = random.uniform(5.0, 10.0)
 luminosite = 0.2
 
-rouge=(255*0.2, 0, 0)
-bleu=(0, 255*0.2, 0)
-vert=(0, 0, 255*0.2)
-jaune=(255*0.2,255*0.2,0)
-eteint=(0, 0, 0)
-
 def update_strip():
-    # Update the LED strip to show the current scores and game state
-    strip.fill((0, 0, 0))
+    # Mise a jour bandeau led
+    global score1, score2, game_state
+    strip.fill(eteint)
     for i in range(score1):
         strip[i] = jaune
     for i in range(score2):
@@ -52,13 +54,18 @@ def update_strip():
     if game_state == "start":
         strip[4] = rouge
     elif game_state == "wait":
-        strip[4] = vert
-    elif game_state == "play":
         strip[4] = bleu
+    elif game_state == "play":
+        strip[4] = vert
     strip.show()
 
+def wait_for_release():
+    while not (button1.value and button2.value):
+        pass
+    time.sleep(0.5)
+
 def reset_game():
-    # Reset the game state and scores
+    # Reset game state et scores
     global score1, score2, game_state
     score1 = 0
     score2 = 0
@@ -66,7 +73,8 @@ def reset_game():
     update_strip()
 
 def flash_winner(winner):
-    # Flash the winner's LEDs until both players press their buttons to start a new game
+    # Flash  les leds du gagnant
+    
     while button1.value or button2.value:
         if winner == 1:
             for j in range(4):
@@ -84,32 +92,46 @@ def flash_winner(winner):
                 strip[8 - j] = eteint
         strip.show()
         time.sleep(0.5)
+    wait_for_release()
 
 def handle_start_state():
+
     # Handle the start state
-    global game_state, start_time
-    if not button1.value and not button2.value:
-        # Animate the center LED while waiting for both players to release their buttons
-        while not button1.value or not button2.value:
-            strip[4] = rouge
-            strip.show()
-            time.sleep(0.5)
-            strip[4] = vert
-            strip.show()
-            time.sleep(0.5)
-        game_state = "wait"
-        start_time = time.monotonic()
-        update_strip()
+    global game_state, start_time, button1, button2
+    print(game_state)
+    # Animate the center LED while waiting for both players to release their buttons
+    while button1.value or button2.value:
+        strip[4] = rouge
+        strip.show()
+        time.sleep(0.5)
+        strip[4] = jaune
+        strip.show()
+        time.sleep(0.5)
+        
+    game_state = "wait"
+    print(game_state)
+    update_strip()
+    wait_for_release()
+    start_time = time.monotonic()
+
+
 
 def handle_wait_state():
     # Handle the wait state
     global game_state,score1,score2,start_time
     if not button1.value:
-        score1 -= max(score1 - 1 , 0) # subtract one point from player one's score if they press their button during the wait state
+        print("B1")
+        score1 = max(score1 - 1 , 0) # subtract one point from player one's score if they press their button during the wait state
         update_strip()
+
+        wait_for_release()
     elif not button2.value:
-        score2 -= max(score2 - 1 , 0) # subtract one point from player two's score if they press their button during the wait state
+        print("B2")
+        print(score2)
+        score2 = max(score2 - 1 , 0) # subtract one point from player two's score if they press their button during the wait state
         update_strip()
+        print(score2)
+        wait_for_release()
     elif time.monotonic() - start_time >= wait_time:
         game_state = "play"
         update_strip()
@@ -121,7 +143,7 @@ def handle_play_state():
         score1 += 1
         wait_time = random.uniform(5.0,10.0) # change wait_time every time a point is scored.
         update_strip()
-        time.sleep(2)
+        wait_for_release()
         if score1 == 5:
             flash_winner(1)
             reset_game()
@@ -132,7 +154,7 @@ def handle_play_state():
         score2 += 1
         wait_time = random.uniform(5.0,10.0) # change wait_time every time a point is scored.
         update_strip()
-        time.sleep(2)
+        wait_for_release()
         if score2 == 5:
             flash_winner(2)
             reset_game()
@@ -147,4 +169,3 @@ while True:
         handle_wait_state()
     elif game_state == "play":
         handle_play_state()
-

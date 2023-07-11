@@ -1,6 +1,5 @@
 """
------ WORK IN PROGRESS ----  ça marche mais y'a encore des trucs à faire.
-# éteindre tout
+# commande manuelle: éteindre tout
 import time
 import random
 import board
@@ -61,8 +60,9 @@ def update_strip():
 
 def wait_for_release():
     while not (button1.value and button2.value):
-        pass
-    time.sleep(0.5)
+        strip[4] = jaune
+        strip.show()
+    update_strip()
 
 def reset_game():
     # Reset game state et scores
@@ -73,7 +73,7 @@ def reset_game():
     update_strip()
 
 def flash_winner(winner):
-    # Flash  les leds du gagnant
+    # Flash les leds du gagnant
     
     while button1.value or button2.value:
         if winner == 1:
@@ -96,10 +96,10 @@ def flash_winner(winner):
 
 def handle_start_state():
 
-    # Handle the start state
+    # en attente que les joueurs soient prêts
     global game_state, start_time, button1, button2
     print(game_state)
-    # Animate the center LED while waiting for both players to release their buttons
+    # Animation de la led centrale
     while button1.value or button2.value:
         strip[4] = rouge
         strip.show()
@@ -107,7 +107,7 @@ def handle_start_state():
         strip[4] = jaune
         strip.show()
         time.sleep(0.5)
-        
+    # départ nouvelle manche    
     game_state = "wait"
     print(game_state)
     update_strip()
@@ -120,17 +120,12 @@ def handle_wait_state():
     # Handle the wait state
     global game_state,score1,score2,start_time
     if not button1.value:
-        print("B1")
-        score1 = max(score1 - 1 , 0) # subtract one point from player one's score if they press their button during the wait state
+        score1 = max(score1 - 1 , 0) # retire un point
         update_strip()
-
         wait_for_release()
     elif not button2.value:
-        print("B2")
-        print(score2)
-        score2 = max(score2 - 1 , 0) # subtract one point from player two's score if they press their button during the wait state
+        score2 = max(score2 - 1 , 0) # retire un point
         update_strip()
-        print(score2)
         wait_for_release()
     elif time.monotonic() - start_time >= wait_time:
         game_state = "play"
@@ -141,7 +136,7 @@ def handle_play_state():
     global game_state,score1,score2,start_time
     if not button1.value:
         score1 += 1
-        wait_time = random.uniform(5.0,10.0) # change wait_time every time a point is scored.
+        wait_time = random.uniform(5.0,10.0) # change le délai à chaque fois
         update_strip()
         wait_for_release()
         if score1 == 5:
@@ -152,7 +147,7 @@ def handle_play_state():
             update_strip()
     elif not button2.value:
         score2 += 1
-        wait_time = random.uniform(5.0,10.0) # change wait_time every time a point is scored.
+        wait_time = random.uniform(5.0,10.0) # change le délai à chaque fois
         update_strip()
         wait_for_release()
         if score2 == 5:
@@ -169,3 +164,5 @@ while True:
         handle_wait_state()
     elif game_state == "play":
         handle_play_state()
+
+
